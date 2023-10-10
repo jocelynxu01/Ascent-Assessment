@@ -12,7 +12,8 @@ We recommend working on Visual Studio Code and learning a little more about Flut
 
 We would like you to create the UI displayed in the following images. 
 
-![image](https://github.com/Dgolme1/dog_fact_app/assets/82067568/f9a4d0b7-e883-4364-8345-1d2a0679290b)
+![image](https://github.com/Dgolme1/dog_fact_app/assets/82067568/5a91f6ad-1f71-430c-bdcb-f24dc9e57ff6)
+
 
 
 On initialization of the app, the far left screen should be displayed. After pressing the "Shake for Facts!" button, the screens should change to the UI layout on the right. 
