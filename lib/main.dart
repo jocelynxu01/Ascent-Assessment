@@ -1,4 +1,10 @@
+import 'dart:convert';
+import 'dart:io';
+import 'dart:math';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
+import 'package:shake/shake.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -51,42 +57,235 @@ class MyHomePage extends StatefulWidget {
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MyHomePage> createState() => LandingPage();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class MyContentPage extends StatefulWidget {
+  const MyContentPage({super.key, required this.title});
+
+  final String title;
+
+  @override
+  State<MyContentPage> createState() => ContentPage();
+}
+
+class LandingPage extends State<MyHomePage> {
+  late ShakeDetector shakeDetector;
+
+  @override
+  void initState() {
+    super.initState();
+    shakeDetector = ShakeDetector.autoStart(onPhoneShake: () {
+      navigateToContentPage();
+    });
+  }
+
+  @override
+  void dispose() {
+    shakeDetector.stopListening();
+    super.dispose();
+  }
+
+  void navigateToContentPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const MyContentPage(title: 'content page'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
+      body: Stack(
+        children: <Widget>[
+          SizedBox(
+            height: 660,
+            child: Image.asset(
+              ('images/dog bone background.jpg'),
+              fit: BoxFit.cover,
+             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 350.0),
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+              color: Colors.white
+            )
+          ),
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                const SizedBox(height: 100),
+                SizedBox(
+                    width: 190,
+                    child: Image.asset(
+                      ('images/dog_icon.png'), 
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                const SizedBox(height: 20),
+                const Text(
+                  'My Dog Fact App',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                ElevatedButton(
+                  onPressed: () {
+                    navigateToContentPage();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    minimumSize: const Size(160, 70),
+                    backgroundColor: const Color(0xFF1E4799) // Set the button color to dark blue
+                  ),
+                  child: const Text('Shake for Facts!', style: TextStyle(fontSize: 15, color: Colors.white)),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class ContentPage extends State<MyContentPage> {
+  bool isHome = true;
+  bool isLiked = false;
+  String dogFact = 'Loading fact...';
+  late ShakeDetector shakeDetector;
+
+  Future<void> loadJsonAsset() async {
+    final String jsonString = await rootBundle.loadString('dog_facts.json');
+    final data = jsonDecode(jsonString);
+
+    if (data['facts'] is List) {
+      final List<dynamic> facts = data['facts'];
+      final random = Random();
+      final factIndex = random.nextInt(facts.length);
+      final fact = facts[factIndex];
+      setState(() {
+        dogFact = fact;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadJsonAsset();
+    shakeDetector = ShakeDetector.autoStart(onPhoneShake: () {
+      updateDogFact();
+    });
+  }
+
+  @override
+  void dispose() {
+    shakeDetector.stopListening();
+    super.dispose();
+  }
+
+  void updateDogFact() {
+    loadJsonAsset();
+  }
+
+Future<void> saveFavoriteFact(String fact) async {
+  final directory = await getApplicationDocumentsDirectory();
+  final file = File('${directory.path}/favorite_facts.txt');
+  // File: '/data/user/0/com.example.dog_facts_app/app_flutter/favorite_facts.txt'
+
+  // Write the fact to the file
+  await file.writeAsString('$fact\n', mode: FileMode.append);
+}
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFF1E4799),
       body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
         child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'My Dog Fact App',
-              style: Theme.of(context).textTheme.headlineMedium,
+            const SizedBox(height: 50),
+            Padding(padding: const EdgeInsets.only(left: 8, right:8),child: 
+              Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: <Widget>[
+                    // Top half: Image
+                    SizedBox(
+                      child: Image.asset(
+                        ('images/dog.png'), 
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    // Bottom half: Text
+                    const SizedBox(height: 30.0),
+                      Container(
+                        height: 180,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.black,
+                            width: 2.0,
+                          ),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: SingleChildScrollView(
+                            child: Text(
+                              dogFact,
+                              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                      ),
+                      // Like button
+                    const SizedBox(height: 16.0),
+                    Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          IconButton(
+                            icon: Icon(
+                              isLiked ? Icons.favorite : Icons.favorite_border,
+                              color: isLiked ? Colors.red : null,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                isLiked = !isLiked; 
+                                if (isLiked) {
+                                  saveFavoriteFact(dogFact);
+                                }
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                  ],
+                 )
+                ),
+              ),
             ),
+            Container(
+              padding: const EdgeInsets.only(top: 50.0), 
+              child: ElevatedButton(
+                onPressed: () {
+                  updateDogFact();
+                  isLiked = false;
+                },
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(160, 70), 
+                ),
+                child: const Text('Shake for Facts!', style: TextStyle(fontSize: 15)),
+              ),
+            )
           ],
         ),
       ),
